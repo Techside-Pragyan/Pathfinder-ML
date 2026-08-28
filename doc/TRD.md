@@ -13,14 +13,14 @@ The **AI Study Mentor** platform consists of a modern, reactive client applicati
 
 ```mermaid
 graph TD
-    Client[Next.js Client Web App] -->|HTTPS / WSS| Gateway[API Gateway / Fastify Server]
+    Client[React SPA - Vite + React 19] -->|HTTPS / WSS| Gateway[API Gateway / Python FastAPI Server]
     Gateway -->|Auth / Session| Redis[(Redis Cache & Session)]
-    Gateway -->|CRUD / Transactions| DB[(PostgreSQL 16 + pgvector)]
-    Gateway -->|Async Jobs / Parsing| Queue[BullMQ / Celery Task Queue]
-    Queue --> Worker[Document Parsing & Embedding Worker]
+    Gateway -->|SQLAlchemy / asyncpg| DB[(PostgreSQL 16 + pgvector)]
+    Gateway -->|Async Jobs / Parsing| Queue[Celery / Redis Task Queue]
+    Queue --> Worker[Python Ingestion & Embedding Worker - Celery]
     Worker -->|Store Vectors| DB
     Worker -->|Embeddings API| EmbeddingAPI[OpenAI / Gemini Embeddings]
-    Gateway -->|RAG / Socratic Chat| AIOrchestrator[AI Agent & RAG Orchestrator]
+    Gateway -->|RAG / Socratic Chat| AIOrchestrator[Python AI Agent & RAG - LangChain / LlamaIndex]
     AIOrchestrator -->|Vector Similarity Query| DB
     AIOrchestrator -->|Streaming Completion| LLM[LLM API: Claude 3.5 Sonnet / GPT-4o]
 ```
@@ -31,15 +31,16 @@ graph TD
 
 | Layer | Technology | Version | Rationale |
 | :--- | :--- | :--- | :--- |
-| **Frontend Web App** | Next.js (App Router), React, TypeScript | 15.x / 19.x | SSR/SSG for rapid loading, Server Components, typed contracts, responsive layouts. |
-| **Styling & UI** | TailwindCSS / CSS Modules, Lucide Icons, Framer Motion | Latest | Responsive layout, glassmorphism design tokens, micro-animations for study engagement. |
-| **Backend API Gateway** | Node.js (Fastify / Express) or Python FastAPI | Latest | High concurrency, async I/O, native TypeScript/Python ecosystem, low memory overhead. |
+| **Frontend Web App** | Pure React (Vite + TypeScript / JS) | React 19 / Vite 6 | Pure Client SPA for maximum UI responsiveness, rapid local development, decoupled frontend architecture. |
+| **Styling & UI** | CSS / TailwindCSS, Lucide Icons, Framer Motion | Latest | Responsive layout, glassmorphism design tokens, micro-animations for study engagement. |
+| **Backend API Gateway** | Python (FastAPI + Uvicorn) | Python 3.11+ / FastAPI 0.115+ | High-performance asynchronous REST & SSE streaming, native Python ML/AI ecosystem, automatic OpenAPI docs. |
+| **ORM & Migrations** | SQLAlchemy 2.0 (Async) + Alembic / SQLModel | Latest | Strongly typed Python async database operations, robust schema migrations. |
 | **Relational Database** | PostgreSQL | 16.x | ACID compliance, JSONB document storage, relational integrity for user schedules. |
 | **Vector Search** | PostgreSQL `pgvector` extension | 0.7+ | Eliminates multi-database sync overhead by co-locating relational data and embeddings. |
-| **Cache & Task Queue** | Redis + BullMQ | 7.x | High-speed token caching, user session management, background PDF ingestion queue. |
-| **AI / LLM Orchestration**| LangChain / LlamaIndex + Vercel AI SDK | Latest | Streaming chat UI integration, RAG pipeline, semantic chunking, prompt template management. |
-| **Document Extraction** | `pdf-parse`, `tesseract.js` (OCR), `mammoth` (DOCX)| Latest | Multi-format syllabus and textbook parsing directly to semantic markdown chunks. |
-| **Authentication** | NextAuth.js / Supabase Auth / JWT | Latest | Secure OAuth2 (Google/GitHub) and email/password with Argon2 password hashing. |
+| **Cache & Task Queue** | Redis + Celery | Latest | High-speed token caching, user session management, background PDF ingestion queue. |
+| **AI / LLM Orchestration**| LangChain / LlamaIndex / OpenAI Python SDK | Latest | Python-native RAG pipeline, semantic chunking, prompt template management. |
+| **Document Extraction** | `pypdf`, `pdfplumber`, `python-docx`, `pytesseract` | Latest | High-fidelity multi-format textbook and notes parsing directly in Python. |
+| **Authentication** | OAuth2 + JWT (FastAPI Security / `python-jose`, `passlib` / `argon2-cffi`) | Latest | Secure OAuth2 (Google/GitHub) and email/password with Argon2 password hashing. |
 
 ---
 
