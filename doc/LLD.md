@@ -99,129 +99,135 @@ classDiagram
 
 ---
 
-## 2. Core Service Interfaces & TypeScript Contracts
+## 2. Core Service Interfaces & Python Data Contracts
 
-### 2.1. Spaced Repetition (SRS) Engine
-```typescript
-export interface FlashcardReviewInput {
-  cardId: string;
-  rating: 0 | 1 | 2 | 3 | 4 | 5; // 0=Blackout, 3=Pass with effort, 5=Perfect instant recall
-  reviewDurationMs: number;
-}
+### 2.1. Spaced Repetition (SRS) Engine (Python)
+```python
+from datetime import datetime, timedelta
+from typing import Literal, Tuple
+from pydantic import BaseModel, Field
 
-export interface FlashcardReviewResult {
-  cardId: string;
-  previousEaseFactor: number;
-  newEaseFactor: number;
-  previousInterval: number;
-  newIntervalDays: number;
-  repetitions: number;
-  nextReviewDate: Date;
-}
 
-export class SpacedRepetitionService {
-  public calculateSM2(
-    currentEF: number,
-    currentRepetitions: number,
-    currentInterval: number,
-    rating: number
-  ): { easeFactor: number; repetitions: number; intervalDays: number; nextReviewDate: Date } {
-    // 1. Calculate new Ease Factor (EF)
-    let newEF = currentEF + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
-    if (newEF < 1.3) newEF = 1.3;
+class FlashcardReviewInput(BaseModel):
+    card_id: str
+    rating: Literal[0, 1, 2, 3, 4, 5]  # 0=Blackout, 3=Pass with effort, 5=Perfect instant recall
+    duration_ms: int = Field(ge=0)
 
-    let newReps = currentRepetitions;
-    let newInterval = currentInterval;
 
-    // 2. Determine repetition count & interval
-    if (rating < 3) {
-      // Failed recall - reset repetitions
-      newReps = 0;
-      newInterval = 1;
-    } else {
-      // Successful recall
-      if (newReps === 0) {
-        newInterval = 1;
-      } else if (newReps === 1) {
-        newInterval = 6;
-      } else {
-        newInterval = Math.round(currentInterval * newEF);
-      }
-      newReps += 1;
-    }
+class FlashcardReviewResult(BaseModel):
+    card_id: str
+    previous_ease_factor: float
+    new_ease_factor: float
+    previous_interval: int
+    new_interval_days: int
+    repetitions: int
+    next_review_date: datetime
 
-    const nextReviewDate = new Date();
-    nextReviewDate.setDate(nextReviewDate.getDate() + newInterval);
 
-    return {
-      easeFactor: Number(newEF.toFixed(2)),
-      repetitions: newReps,
-      intervalDays: newInterval,
-      nextReviewDate,
-    };
-  }
-}
+class SpacedRepetitionService:
+    @staticmethod
+    def calculate_sm2(
+        current_ef: float,
+        current_repetitions: int,
+        current_interval: int,
+        rating: int
+    ) -> Tuple[float, int, int, datetime]:
+        """
+        Executes SuperMemo SM-2 algorithm in pure Python.
+        """
+        # 1. Calculate new Ease Factor (EF)
+        new_ef = current_ef + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02))
+        if new_ef < 1.3:
+            new_ef = 1.3
+
+        new_reps = current_repetitions
+        new_interval = current_interval
+
+        # 2. Determine repetition count & interval
+        if rating < 3:
+            # Failed recall - reset repetitions
+            new_reps = 0
+            new_interval = 1
+        else:
+            # Successful recall
+            if new_reps == 0:
+                new_interval = 1
+            elif new_reps == 1:
+                new_interval = 6
+            else:
+                new_interval = round(current_interval * new_ef)
+            new_reps += 1
+
+        next_review_date = datetime.utcnow() + timedelta(days=new_interval)
+
+        return round(new_ef, 2), new_reps, new_interval, next_review_date
 ```
 
 ---
 
-### 2.2. Adaptive Study Plan Balancer
-```typescript
-export interface StudyPlanCreationParams {
-  userId: string;
-  courseTitle: string;
-  targetExamDate: Date;
-  dailyAvailableMinutes: number;
-  topics: Array<{
-    title: string;
-    estimatedDifficulty: 1 | 2 | 3 | 4 | 5;
-    prerequisiteTopicIds?: string[];
-  }>;
-}
+### 2.2. Adaptive Study Plan Balancer (Python)
+```python
+from datetime import datetime, date, timedelta
+from typing import List, Optional
+from pydantic import BaseModel, Field
 
-export class AdaptivePlannerService {
-  public generatePlan(params: StudyPlanCreationParams): Array<{ date: Date; topicTitle: string; allocatedMinutes: number }> {
-    const today = new Date();
-    const totalDaysAvailable = Math.max(1, Math.floor((params.targetExamDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-    
-    // Allocate 15% of the final days for comprehensive revision & mock exams
-    const learningDays = Math.max(1, Math.floor(totalDaysAvailable * 0.85));
-    const totalDifficultyWeight = params.topics.reduce((acc, t) => acc + t.estimatedDifficulty, 0);
 
-    const schedule: Array<{ date: Date; topicTitle: string; allocatedMinutes: number }> = [];
-    let currentDayOffset = 0;
+class TopicRequirement(BaseModel):
+    title: str
+    estimated_difficulty: int = Field(ge=1, le=5)
+    prerequisite_ids: Optional[List[str]] = None
 
-    for (const topic of params.topics) {
-      const topicDays = Math.max(1, Math.round((topic.estimatedDifficulty / totalDifficultyWeight) * learningDays));
-      
-      for (let i = 0; i < topicDays; i++) {
-        const milestoneDate = new Date(today);
-        milestoneDate.setDate(today.getDate() + currentDayOffset);
-        
-        schedule.push({
-          date: milestoneDate,
-          topicTitle: i === 0 ? `Learn: ${topic.title}` : `Deep Dive & Practice: ${topic.title}`,
-          allocatedMinutes: params.dailyAvailableMinutes,
-        });
-        currentDayOffset++;
-      }
-    }
 
-    // Append Final Spaced Revision Blocks
-    while (currentDayOffset < totalDaysAvailable) {
-      const revisionDate = new Date(today);
-      revisionDate.setDate(today.getDate() + currentDayOffset);
-      schedule.push({
-        date: revisionDate,
-        topicTitle: `Active Recall & Mock Diagnostic Test #${currentDayOffset - learningDays + 1}`,
-        allocatedMinutes: params.dailyAvailableMinutes,
-      });
-      currentDayOffset++;
-    }
+class StudyPlanCreationParams(BaseModel):
+    user_id: str
+    course_title: str
+    target_exam_date: date
+    daily_available_minutes: int = 45
+    topics: List[TopicRequirement]
 
-    return schedule;
-  }
-}
+
+class MilestoneOutput(BaseModel):
+    scheduled_date: date
+    topic_title: str
+    allocated_minutes: int
+
+
+class AdaptivePlannerService:
+    @staticmethod
+    def generate_plan(params: StudyPlanCreationParams) -> List[MilestoneOutput]:
+        today = date.today()
+        total_days_available = max(1, (params.target_exam_date - today).days)
+
+        # Allocate 15% of final days for comprehensive revision & mock exams
+        learning_days = max(1, int(total_days_available * 0.85))
+        total_difficulty_weight = sum(t.estimated_difficulty for t in params.topics) or 1
+
+        schedule: List[MilestoneOutput] = []
+        current_day_offset = 0
+
+        for topic in params.topics:
+            topic_days = max(1, round((topic.estimated_difficulty / total_difficulty_weight) * learning_days))
+            for i in range(topic_days):
+                milestone_date = today + timedelta(days=current_day_offset)
+                title = f"Learn: {topic.title}" if i == 0 else f"Deep Dive & Practice: {topic.title}"
+                schedule.append(MilestoneOutput(
+                    scheduled_date=milestone_date,
+                    topic_title=title,
+                    allocated_minutes=params.daily_available_minutes
+                ))
+                current_day_offset += 1
+
+        # Append Final Spaced Revision Blocks
+        while current_day_offset < total_days_available:
+            revision_date = today + timedelta(days=current_day_offset)
+            schedule.append(MilestoneOutput(
+                scheduled_date=revision_date,
+                topic_title=f"Active Recall & Mock Diagnostic Test #{current_day_offset - learning_days + 1}",
+                allocated_minutes=params.daily_available_minutes
+            ))
+            current_day_offset += 1
+
+        return schedule
 ```
 
 ---
