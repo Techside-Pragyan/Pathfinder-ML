@@ -14,16 +14,16 @@ The **AI Study Mentor** is architected as a modular, cloud-native micro-monolith
 ```mermaid
 graph TB
     subgraph ClientLayer[Client Tier]
-        WebClient[Next.js 15 Web Application]
-        PWA[Progressive Web App / Mobile Shell]
+        WebClient[Pure React SPA - Vite + TypeScript]
+        PWA[Progressive Web App Shell]
     end
 
     subgraph EdgeLayer[Edge & Gateway Tier]
-        CDN[Cloudflare CDN & DDoS Protection]
-        APIGateway[API Gateway / Reverse Proxy - Traefik/Nginx]
+        CDN[Cloudflare CDN & Static Hosting]
+        APIGateway[Reverse Proxy - Nginx / Traefik]
     end
 
-    subgraph ServiceLayer[Core Application Services]
+    subgraph ServiceLayer[Core Python Backend Services - FastAPI]
         AuthService[Auth & User Service]
         PlanService[Study Plan & Calendar Service]
         QuizService[Diagnostic & Quiz Service]
@@ -33,9 +33,9 @@ graph TB
     end
 
     subgraph AIWorkerLayer[AI & Async Processing Tier]
-        RAGOrchestrator[RAG & Semantic Retrieval Engine]
-        EmbeddingWorker[Document Parsing & Embedding Worker]
-        TaskQueue[BullMQ / Redis Task Queue]
+        RAGOrchestrator[Python RAG & Semantic Retrieval Engine]
+        EmbeddingWorker[Python Celery Ingestion & Embedding Worker]
+        TaskQueue[Redis / Celery Task Queue]
     end
 
     subgraph DataLayer[Data & Persistence Tier]
@@ -77,8 +77,8 @@ graph TB
 
 ## 2. Component Decomposition & Responsibilities
 
-### 2.1. Client Tier (Frontend Web & PWA)
-- **Framework**: Next.js 15 with App Router and React Server Components (RSC).
+### 2.1. Client Tier (Pure React SPA - Vite)
+- **Framework**: Pure React (Vite, React 19, TypeScript/JS, React Router v7).
 - **Core Modules**:
   - `StudyPlannerView`: Interactive calendar displaying scheduled study milestones, drag-and-drop rescheduling, and target milestone checklists.
   - `SocraticChatView`: Streaming markdown chat interface with mathematical formula rendering ($\LaTeX$ / KaTeX), code syntax highlighting, and voice I/O.
@@ -86,10 +86,11 @@ graph TB
   - `DiagnosticQuizModal`: Step-by-step interactive assessment with immediate conceptual breakdown.
   - `FocusMode`: Fullscreen distraction-free timer with ambient lo-fi player.
 
-### 2.2. API Gateway & Routing Tier
-- **Rate Limiter**: Token-bucket algorithm per IP and authenticated User ID.
-- **Auth Interceptor**: Validates JWTs, injects `UserContext`, verifies subscription tier or resource ownership.
-- **SSE Stream Handler**: Manages long-lived Server-Sent Event connections for real-time LLM token streams.
+### 2.2. Backend Tier (Python FastAPI + Asyncpg + SQLAlchemy)
+- **FastAPI Core**: Async route handlers with automatic OpenAPI/Swagger documentation (`/docs`).
+- **Rate Limiter**: Redis Token-bucket algorithm per IP and authenticated User ID (`slowapi`).
+- **Auth Interceptor**: OAuth2 Password Bearer with JWT validation, dependency injection for `get_current_user`.
+- **SSE Stream Handler**: Asynchronous generators (`StreamingResponse`) yielding `text/event-stream` chunks.
 
 ### 2.3. Core Domain Services
 1. **User & Auth Service**: Handles registration, OAuth2 identity federation, session validation, and user learning preferences.
