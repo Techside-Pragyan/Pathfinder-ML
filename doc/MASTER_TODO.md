@@ -36,12 +36,12 @@ gantt
 ## 2. Sprint-by-Sprint Execution Checklist
 
 ### Phase 1: Project Scaffolding, Database & Auth
-- [ ] **Task 1.1**: Initialize monorepo / workspace with Next.js 15 (App Router, TypeScript) and Node/FastAPI backend.
+- [ ] **Task 1.1**: Initialize workspace with Pure React SPA (`client/` via Vite + TypeScript/JS) and Python FastAPI backend (`server/` with `uvicorn`, `pydantic-settings`).
 - [ ] **Task 1.2**: Provision PostgreSQL 16 database with `pgvector` and `uuid-ossp` extensions enabled.
-- [ ] **Task 1.3**: Configure ORM schema (Prisma / Drizzle / SQLAlchemy) based on [DATABASE_DESIGN.md](file:///c:/Users/pragy/Documents/GitHub/Pathfinder-ML/doc/DATABASE_DESIGN.md).
-- [ ] **Task 1.4**: Run baseline database migrations and generate typed database client contracts.
-- [ ] **Task 1.5**: Implement user authentication endpoints (`/auth/register`, `/auth/login`, `/auth/refresh`) with Argon2 hashing and JWTs.
-- [ ] **Task 1.6**: Build frontend authentication flow (Login, Sign Up, Session context provider).
+- [ ] **Task 1.3**: Configure Python ORM schema (`SQLAlchemy 2.0` async / `SQLModel` / `Alembic`) based on [DATABASE_DESIGN.md](file:///c:/Users/pragy/Documents/GitHub/Pathfinder-ML/doc/DATABASE_DESIGN.md).
+- [ ] **Task 1.4**: Run baseline database migrations with Alembic and verify schema integrity.
+- [ ] **Task 1.5**: Implement user authentication in FastAPI (`/api/v1/auth/register`, `/login`, `/refresh`) using `passlib[argon2]` and `python-jose` JWTs.
+- [ ] **Task 1.6**: Build frontend React authentication flow (Login, Sign Up, JWT auth context & Axios/Fetch interceptor).
 
 ---
 
@@ -103,4 +103,4 @@ gantt
 - [ ] **Task 8.2**: Write API integration tests for all auth, document, chat, and deck endpoints.
 - [ ] **Task 8.3**: Conduct accessibility (WCAG 2.1 AA) and cross-browser responsiveness audit.
 - [ ] **Task 8.4**: Configure GitHub Actions CI/CD pipeline and Docker multi-stage container builds.
-- [ ] **Task 8.5**: Deploy database (PostgreSQL + pgvector), API services, and Next.js frontend to production cloud environment.
+- [ ] **Task 8.5**: Deploy database (PostgreSQL + pgvector), Python FastAPI backend, and Pure React frontend (Vite SPA) to production cloud environment.
